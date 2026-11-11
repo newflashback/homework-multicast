@@ -29,25 +29,36 @@ struct Client
 
 class UdpClient : public Client
 {
-    const udp::Socket& socket_;
-    sockaddr_in address_;
 public:
-    UdpClient(const udp::Socket& socket, const sockaddr_in& address): socket_(socket), address_(address) {}
+    UdpClient(const udp::Socket& socket, const sockaddr_in& address)
+        : socket_(socket), address_(address)
+    {
+    }
+
     bool send_message(std::string_view message) final
     {
         return udp::send(socket_, address_, message);
     }
+
+private:
+    const udp::Socket& socket_;
+    sockaddr_in address_;
 };
 
 class SerialClient : public Client
 {
-    serial::Device device_;
 public:
-    explicit SerialClient(std::string_view path) : device_(path) {}
+    explicit SerialClient(std::string_view path) : device_(path)
+    {
+    }
+
     bool send_message(std::string_view message) final
     {
         return serial::send(device_, message);
     }
+
+private:
+    serial::Device device_;
 };
 
 } // namespace
@@ -69,13 +80,13 @@ int main(int argc, char* argv[])
 
     try
     {
-        //using namespace multicast;
         Config config{argv[1]};
         udp::Socket socket{};
         std::vector<std::unique_ptr<Client>> clients;
         for (const auto& entry : config.GetUdpEntries())
         {
-            clients.push_back(std::make_unique<UdpClient>(socket, entry.address));
+            clients.push_back(
+                std::make_unique<UdpClient>(socket, entry.address));
         }
 
         for (const auto& entry : config.GetSerialEntries())
@@ -87,7 +98,7 @@ int main(int argc, char* argv[])
         while (print_prompt(), std::getline(std::cin, input))
         {
             input.push_back('\n');
-            for(const auto& client: clients)
+            for (const auto& client : clients)
             {
                 client->send_message(input);
             }
